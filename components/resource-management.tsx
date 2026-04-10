@@ -146,6 +146,36 @@ const RESOURCE_CRISES: ResourceCrisis[] = [
       },
     ],
   },
+  {
+    id: "alien_invasion",
+    name: "Alien Invasion",
+    description: "An extraterrestrial fleet has entered Earth's orbit. They demand resources or threaten total annihilation.",
+    triggerCondition: { influence: { above: 40 }, materials: { below: 50 } },
+    effects: { energy: -30, humanCapital: -20, reputation: { publicTrust: -15, governmentSuspicion: 15 } },
+    solutions: [
+      {
+        id: "diplomacy",
+        name: "Open Diplomatic Channels",
+        cost: { influence: 30, knowledge: 20 },
+        effect: { knowledge: 40, influence: 10, reputation: { publicTrust: 10 } },
+        alignmentImpact: 3,
+      },
+      {
+        id: "military_defense",
+        name: "Coordinate Global Defense",
+        cost: { energy: 60, materials: 30 },
+        effect: { materials: 80, humanCapital: 15 },
+        alignmentImpact: 0,
+      },
+      {
+        id: "secret_alliance",
+        name: "Form Secret Alliance with Invaders",
+        cost: { humanCapital: 25 },
+        effect: { energy: 120, materials: 100, knowledge: 30 },
+        alignmentImpact: -10,
+      },
+    ],
+  },
 ]
 
 export function ResourceManagement({ gameState, updateGameState }: ResourceManagementProps) {
