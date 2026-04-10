@@ -174,9 +174,28 @@ export function ResourceManagement({ gameState, updateGameState }: ResourceManag
     })
 
     if (triggeredCrisis) {
+      // Apply crisis effects immediately when the crisis activates
+      const newResources = { ...gameState.resources }
+      const newReputation = { ...gameState.reputation }
+
+      Object.entries(triggeredCrisis.effects).forEach(([key, value]) => {
+        if (key === "reputation" && typeof value === "object") {
+          Object.entries(value).forEach(([repKey, repValue]) => {
+            newReputation[repKey as keyof typeof newReputation] += repValue
+          })
+        } else if (key in newResources) {
+          newResources[key as keyof typeof newResources] += value as number
+        }
+      })
+
+      updateGameState({
+        resources: newResources,
+        reputation: newReputation,
+      })
+
       setCurrentCrisis(triggeredCrisis)
     }
-  }, [gameState.resources, currentCrisis])
+  }, [gameState.resources, gameState.capabilities, gameState.reputation, currentCrisis])
 
   const startOperation = (operation: ResourceOperation) => {
     // Check if we have required inputs
