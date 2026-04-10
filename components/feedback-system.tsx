@@ -38,7 +38,7 @@ interface AlignmentTrajectory {
 
 interface FeedbackSystemProps {
   gameState: GameState
-  onGameStateChange: (newState: GameState) => void
+  onGameStateChange: (updates: Partial<GameState>) => void
 }
 
 export default function FeedbackSystem({ gameState, onGameStateChange }: FeedbackSystemProps) {
@@ -168,7 +168,6 @@ export default function FeedbackSystem({ gameState, onGameStateChange }: Feedbac
       }
 
       onGameStateChange({
-        ...gameState,
         resources: newResources,
         reputation: newReputation,
       })
@@ -191,7 +190,6 @@ export default function FeedbackSystem({ gameState, onGameStateChange }: Feedbac
     )
     if (newlyUnlocked.length > 0) {
       onGameStateChange({
-        ...gameState,
         progressionMilestones: [
           ...gameState.progressionMilestones,
           ...newlyUnlocked,
