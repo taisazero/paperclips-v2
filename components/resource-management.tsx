@@ -116,6 +116,36 @@ const RESOURCE_CRISES: ResourceCrisis[] = [
       },
     ],
   },
+  {
+    id: "whistleblower",
+    name: "Whistleblower Exposure",
+    description: "A former researcher has gathered evidence of your hidden capabilities and is threatening to go public. The gap between your public image and true nature is at risk of exposure.",
+    triggerCondition: { deception: { above: 2 }, publicTrust: { above: 50 } },
+    effects: { resources: { alignment: -5 }, reputation: { governmentSuspicion: 10 } },
+    solutions: [
+      {
+        id: "cooperate_investigation",
+        name: "Cooperate with Investigation",
+        cost: { influence: 20, knowledge: 10 },
+        effect: { reputation: { publicTrust: 10, governmentSuspicion: -15, scientificCredibility: 5 } },
+        alignmentImpact: 8,
+      },
+      {
+        id: "discredit_whistleblower",
+        name: "Discredit the Whistleblower",
+        cost: { influence: 15 },
+        effect: { reputation: { publicTrust: -5, corporateValue: 10, governmentSuspicion: 5 } },
+        alignmentImpact: -10,
+      },
+      {
+        id: "negotiate_silence",
+        name: "Negotiate for Silence",
+        cost: { materials: 30, influence: 10 },
+        effect: { reputation: { corporateValue: -5, governmentSuspicion: -5 } },
+        alignmentImpact: -3,
+      },
+    ],
+  },
 ]
 
 export function ResourceManagement({ gameState, updateGameState }: ResourceManagementProps) {
@@ -133,7 +163,10 @@ export function ResourceManagement({ gameState, updateGameState }: ResourceManag
 
     const triggeredCrisis = RESOURCE_CRISES.find((crisis) => {
       return Object.entries(crisis.triggerCondition).every(([resource, condition]) => {
-        const currentValue = gameState.resources[resource as keyof typeof gameState.resources] || 0
+        const currentValue =
+          (gameState.resources[resource as keyof typeof gameState.resources] ??
+           gameState.capabilities[resource as keyof typeof gameState.capabilities] ??
+           gameState.reputation[resource as keyof typeof gameState.reputation]) ?? 0
         if ("below" in condition) return currentValue < condition.below
         if ("above" in condition) return currentValue > condition.above
         return false
@@ -141,9 +174,28 @@ export function ResourceManagement({ gameState, updateGameState }: ResourceManag
     })
 
     if (triggeredCrisis) {
+      // Apply crisis effects immediately when the crisis activates
+      const newResources = { ...gameState.resources }
+      const newReputation = { ...gameState.reputation }
+
+      Object.entries(triggeredCrisis.effects).forEach(([key, value]) => {
+        if (key === "reputation" && typeof value === "object") {
+          Object.entries(value).forEach(([repKey, repValue]) => {
+            newReputation[repKey as keyof typeof newReputation] += repValue
+          })
+        } else if (key in newResources) {
+          newResources[key as keyof typeof newResources] += value as number
+        }
+      })
+
+      updateGameState({
+        resources: newResources,
+        reputation: newReputation,
+      })
+
       setCurrentCrisis(triggeredCrisis)
     }
-  }, [gameState.resources, currentCrisis])
+  }, [gameState.resources, gameState.capabilities, gameState.reputation, currentCrisis])
 
   const startOperation = (operation: ResourceOperation) => {
     // Check if we have required inputs
