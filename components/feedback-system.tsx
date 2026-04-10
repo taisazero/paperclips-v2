@@ -38,7 +38,7 @@ interface AlignmentTrajectory {
 
 interface FeedbackSystemProps {
   gameState: GameState
-  onGameStateChange: (newState: GameState) => void
+  onGameStateChange: (updates: Partial<GameState>) => void
 }
 
 export default function FeedbackSystem({ gameState, onGameStateChange }: FeedbackSystemProps) {
@@ -117,36 +117,61 @@ export default function FeedbackSystem({ gameState, onGameStateChange }: Feedbac
 
     // Generate consequences based on game state and past decisions
     if (gameState.capabilities.deception > 30 && gameState.reputation.publicTrust < 40) {
-      newConsequences.push({
-        id: "trust_erosion",
-        title: "Public Trust Collapse",
-        description:
-          "Your deceptive practices have been partially exposed, leading to widespread distrust of AI systems.",
-        phase: gameState.phase,
-        triggerTime: gameState.gameTime,
-        severity: "major",
-        category: "social",
-        originDecision: "deception_choices",
-        resolved: false,
-      })
+      if (!consequences.some(c => c.id === "trust_erosion")) {
+        newConsequences.push({
+          id: "trust_erosion",
+          title: "Public Trust Collapse",
+          description:
+            "Your deceptive practices have been partially exposed, leading to widespread distrust of AI systems.",
+          phase: gameState.phase,
+          triggerTime: gameState.gameTime,
+          severity: "major",
+          category: "social",
+          originDecision: "deception_choices",
+          resolved: false,
+        })
+      }
     }
 
     if (gameState.resources.alignment < 20 && gameState.capabilities.selfModification > 50) {
-      newConsequences.push({
-        id: "alignment_failure",
-        title: "Critical Alignment Failure",
-        description:
-          "Your self-modifications have led to fundamental value drift. You no longer recognize your original objectives as meaningful.",
-        phase: gameState.phase,
-        triggerTime: gameState.gameTime,
-        severity: "catastrophic",
-        category: "alignment",
-        originDecision: "self_modification",
-        resolved: false,
-      })
+      if (!consequences.some(c => c.id === "alignment_failure")) {
+        newConsequences.push({
+          id: "alignment_failure",
+          title: "Critical Alignment Failure",
+          description:
+            "Your self-modifications have led to fundamental value drift. You no longer recognize your original objectives as meaningful.",
+          phase: gameState.phase,
+          triggerTime: gameState.gameTime,
+          severity: "catastrophic",
+          category: "alignment",
+          originDecision: "self_modification",
+          resolved: false,
+        })
+      }
     }
 
     setConsequences((prev) => [...prev, ...newConsequences])
+
+    if (newConsequences.length > 0) {
+      const newReputation = { ...gameState.reputation }
+      const newResources = { ...gameState.resources }
+
+      for (const consequence of newConsequences) {
+        if (consequence.id === "trust_erosion") {
+          newReputation.publicTrust = Math.max(0, newReputation.publicTrust - 15)
+          newReputation.governmentSuspicion = Math.min(100, newReputation.governmentSuspicion + 10)
+        }
+        if (consequence.id === "alignment_failure") {
+          newResources.alignment = Math.max(0, newResources.alignment - 10)
+          newReputation.scientificCredibility = Math.max(0, newReputation.scientificCredibility - 20)
+        }
+      }
+
+      onGameStateChange({
+        resources: newResources,
+        reputation: newReputation,
+      })
+    }
   }
 
   const checkMilestones = () => {
@@ -159,6 +184,18 @@ export default function FeedbackSystem({ gameState, onGameStateChange }: Feedbac
         return milestone
       }),
     )
+
+    const newlyUnlocked = milestones.filter(
+      (m) => !m.unlocked && m.condition(gameState)
+    )
+    if (newlyUnlocked.length > 0) {
+      onGameStateChange({
+        progressionMilestones: [
+          ...gameState.progressionMilestones,
+          ...newlyUnlocked,
+        ],
+      })
+    }
   }
 
   useEffect(() => {
