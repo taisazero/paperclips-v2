@@ -13,6 +13,7 @@ import { PhilosophicalDialogue } from "@/components/philosophical-dialogue"
 import { ResourceManagement } from "@/components/resource-management"
 import { TechnologyTree } from "@/components/technology-tree"
 import { CosmicExpansion } from "@/components/cosmic-expansion"
+import FeedbackSystem from "@/components/feedback-system"
 
 const INITIAL_GAME_STATE: GameState = {
   phase: 0,
@@ -673,6 +674,11 @@ export default function AlignmentGame() {
                   ))}
                 </CardContent>
               </Card>
+            )}
+
+            {/* Phase 1+: Feedback & Consequences */}
+            {gameState.phase >= 1 && (
+              <FeedbackSystem gameState={gameState} onGameStateChange={updateGameState} />
             )}
 
             {/* Game Stats - Always visible but simplified in Phase 0 */}
